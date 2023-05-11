@@ -1,6 +1,8 @@
-﻿using AnnonsAPI.Modell;
+﻿using AnnonsAPI.Data;
+using AnnonsAPI.Modell;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace AnnonsAPI.Controllers
 {
@@ -8,6 +10,15 @@ namespace AnnonsAPI.Controllers
     [ApiController]
     public class AnnonsController : ControllerBase
     {
+        private readonly ApplicationDbContext _dbContext;
+        public AnnonsController(ApplicationDbContext dbContext)
+        {
+            _dbContext = dbContext;
+        }
+
+
+
+
         private static List<Annons> annons = new List<Annons>
         {
             new Annons
@@ -37,30 +48,32 @@ namespace AnnonsAPI.Controllers
        
         public async Task<ActionResult<Annons>> GetOne(int id)
         {
-            var annonser = annons.Find(a => a.Id == id);
+            var advertisements = _dbContext.Advertisements.Find(id);
 
-            if (annonser == null)
+            if (advertisements == null)
             {
-                return BadRequest("Annons not found");
+                return BadRequest("Advertisement not found");
             }
-            return Ok(annonser);
+            return Ok(advertisements);
         }
 
         [HttpPost]
-        public async Task<ActionResult<Annons>> PostHero(Annons annonser)
+        public async Task<ActionResult<Annons>> PostAdvertisement(Annons annonser)
         {
-            annons.Add(annonser);
-            return Ok(annons);
+            _dbContext.Advertisements.Add(annonser);
+            await _dbContext.SaveChangesAsync();
+            return Ok(await _dbContext.Advertisements.ToListAsync());
+
         }
         [HttpPut]
-        public async Task<ActionResult<Annons>> UpdateHero(Annons annonser)
+        public async Task<ActionResult<Annons>> UpdateAdvertisement(Annons annonser)
         {
-           
-            var annonsToUpdate = annons.Find(s => s.Id == annonser.Id);
+
+            var annonsToUpdate = await _dbContext.Advertisements.FindAsync(annonser.Id);
 
             if (annonsToUpdate == null)
             {
-                return BadRequest("Superhero not found");
+                return BadRequest("Advertisement not found");
             }
 
             annonsToUpdate.ProductName = annonser.ProductName;
@@ -68,21 +81,26 @@ namespace AnnonsAPI.Controllers
             annonsToUpdate.Price = annonser.Price;
             annonsToUpdate.CreatedDateTime = DateTime.Now;
 
-            return Ok(annons);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(await _dbContext.Advertisements.ToListAsync());
+
         }
         [HttpDelete]
         [Route("{id}")]
         public async Task<ActionResult<Annons>> Delete(int id)
         {
-            var anonnser = annons.Find(a => a.Id == id);
+            var anonnser = await _dbContext.Advertisements.FindAsync(id);
 
             if (anonnser == null)
             {
-                return BadRequest("Annons not found");
+                return BadRequest("Advertisement not found");
             }
 
-            annons.Remove(anonnser);
-            return Ok(annons);
+            _dbContext.Advertisements.Remove(anonnser);
+            await _dbContext.SaveChangesAsync();
+            return Ok(await _dbContext.Advertisements.ToListAsync());
+
         }
 
     }
